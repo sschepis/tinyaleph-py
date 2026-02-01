@@ -1,0 +1,869 @@
+symbol,meaning
++,addition
+−,subtraction
+×,multiplication
+÷,division
+=,equals
+≠,not equal
+<,less than
+>,greater than
+≤,less than or equal
+≥,greater than or equal
+±,plus or minus
+∓,minus or plus
+∞,infinity
+√,square root
+∛,cube root
+∜,fourth root
+∑,summation
+∏,product
+∫,integral
+∬,double integral
+∭,triple integral
+∮,contour integral
+∂,partial derivative
+∇,nabla/gradient
+Δ,delta/change
+∈,element of
+∉,not element of
+⊂,subset of
+⊃,superset of
+⊆,subset or equal
+⊇,superset or equal
+∩,intersection
+∪,union
+∅,empty set
+∀,for all
+∃,there exists
+∄,there does not exist
+∴,therefore
+∵,because
+≈,approximately equal
+≅,congruent to
+≡,identical to
+∝,proportional to
+⊥,perpendicular
+∥,parallel
+∠,angle
+∟,right angle
+°,degree
+′,prime/minute
+″,double prime/second
+π,pi
+τ,tau
+φ,phi/golden ratio
+ε,epsilon
+δ,delta
+λ,lambda
+μ,mu
+σ,sigma
+ω,omega
+α,alpha
+β,beta
+γ,gamma
+θ,theta
+ℵ,aleph
+ℶ,beth
+ℕ,natural numbers
+ℤ,integers
+ℚ,rationals
+ℝ,reals
+ℂ,complex numbers
+ℍ,quaternions
+⊕,xor/direct sum
+⊗,tensor product
+⊙,circled dot
+⊖,circled minus
+⊛,circled asterisk
+⊘,circled slash
+⊞,squared plus
+⊟,squared minus
+⊠,squared times
+⊡,squared dot
+∧,logical and
+∨,logical or
+¬,logical not
+⊻,xor
+⊼,nand
+⊽,nor
+→,implies
+←,implied by
+↔,if and only if
+⇒,strong implies
+⇐,strong implied by
+⇔,strong iff
+⊢,proves/turnstile
+⊣,reverse turnstile
+⊨,models/entails
+⊩,forces
+⊤,true/top
+⊥,false/bottom
+□,necessity/box
+◇,possibility/diamond
+◯,circle
+●,filled circle
+○,empty circle
+◐,left half circle
+◑,right half circle
+◒,lower half circle
+◓,upper half circle
+■,filled square
+□,empty square
+▪,small filled square
+▫,small empty square
+▲,filled up triangle
+△,empty up triangle
+▼,filled down triangle
+▽,empty down triangle
+◀,filled left triangle
+◁,empty left triangle
+▶,filled right triangle
+▷,empty right triangle
+◆,filled diamond
+◇,empty diamond
+★,filled star
+☆,empty star
+✓,checkmark
+✗,x mark
+✕,multiplication x
+✖,heavy multiplication x
+↑,up arrow
+↓,down arrow
+←,left arrow
+→,right arrow
+↖,up-left arrow
+↗,up-right arrow
+↘,down-right arrow
+↙,down-left arrow
+↕,up-down arrow
+↔,left-right arrow
+⇑,double up arrow
+⇓,double down arrow
+⇐,double left arrow
+⇒,double right arrow
+⇕,double up-down arrow
+⇔,double left-right arrow
+↺,counterclockwise arrow
+↻,clockwise arrow
+⟲,counterclockwise circle
+⟳,clockwise circle
+⤴,curved up arrow
+⤵,curved down arrow
+↩,left hook arrow
+↪,right hook arrow
+↰,up arrow with corner
+↱,up arrow with corner right
+↲,down arrow with corner
+↳,down arrow with corner right
+⇠,dashed left arrow
+⇢,dashed right arrow
+⇡,dashed up arrow
+⇣,dashed down arrow
+⟵,long left arrow
+⟶,long right arrow
+⟷,long left-right arrow
+⟸,long double left arrow
+⟹,long double right arrow
+⟺,long double left-right arrow
+↦,maps to
+↤,maps from
+⤇,rightwards double arrow from bar
+⤆,leftwards double arrow from bar
+⊸,multimap
+⇀,right harpoon
+⇁,down harpoon
+↼,left harpoon
+↽,down-left harpoon
+⇌,equilibrium arrows
+⇋,reverse equilibrium arrows
+☀,sun
+☁,cloud
+☂,umbrella
+☃,snowman
+☄,comet
+★,star
+☆,white star
+☉,sun symbol
+☊,ascending node
+☋,descending node
+☌,conjunction
+☍,opposition
+☎,telephone
+☏,white telephone
+☐,ballot box
+☑,checked box
+☒,x ballot box
+☓,saltire
+☔,umbrella with rain
+☕,hot beverage
+☖,white shogi piece
+☗,black shogi piece
+☘,shamrock
+☙,reversed rotated floral heart
+☚,left pointing finger
+☛,right pointing finger
+☜,white left pointing
+☝,white up pointing
+☞,white right pointing
+☟,white down pointing
+☠,skull and crossbones
+☡,caution sign
+☢,radioactive
+☣,biohazard
+☤,caduceus
+☥,ankh
+☦,orthodox cross
+☧,chi rho
+☨,cross of lorraine
+☩,cross of jerusalem
+☪,star and crescent
+☫,farsi symbol
+☬,adi shakti
+☭,hammer and sickle
+☮,peace symbol
+☯,yin yang
+☰,trigram heaven
+☱,trigram lake
+☲,trigram fire
+☳,trigram thunder
+☴,trigram wind
+☵,trigram water
+☶,trigram mountain
+☷,trigram earth
+☸,wheel of dharma
+☹,frowning face
+☺,smiling face
+☻,black smiling face
+☼,sun with rays
+☽,first quarter moon
+☾,last quarter moon
+☿,mercury
+♀,venus/female
+♁,earth
+♂,mars/male
+♃,jupiter
+♄,saturn
+♅,uranus
+♆,neptune
+♇,pluto
+♈,aries
+♉,taurus
+♊,gemini
+♋,cancer
+♌,leo
+♍,virgo
+♎,libra
+♏,scorpio
+♐,sagittarius
+♑,capricorn
+♒,aquarius
+♓,pisces
+♔,white chess king
+♕,white chess queen
+♖,white chess rook
+♗,white chess bishop
+♘,white chess knight
+♙,white chess pawn
+♚,black chess king
+♛,black chess queen
+♜,black chess rook
+♝,black chess bishop
+♞,black chess knight
+♟,black chess pawn
+♠,spade suit
+♡,heart suit white
+♢,diamond suit white
+♣,club suit
+♤,spade suit white
+♥,heart suit
+♦,diamond suit
+♧,club suit white
+♨,hot springs
+♩,quarter note
+♪,eighth note
+♫,beamed eighth notes
+♬,beamed sixteenth notes
+♭,flat
+♮,natural
+♯,sharp
+♰,west syriac cross
+♱,east syriac cross
+♲,recycling symbol
+♳,recycling type 1
+♴,recycling type 2
+♵,recycling type 3
+♶,recycling type 4
+♷,recycling type 5
+♸,recycling type 6
+♹,recycling type 7
+♺,recycling generic
+♻,universal recycling
+♼,recycled paper
+♽,partially recycled paper
+♾,permanent paper
+♿,wheelchair
+⚀,die face 1
+⚁,die face 2
+⚂,die face 3
+⚃,die face 4
+⚄,die face 5
+⚅,die face 6
+⚆,white circle with dot right
+⚇,white circle with two dots
+⚈,black circle with white dot right
+⚉,black circle with two white dots
+⚊,monogram yang
+⚋,monogram yin
+⚌,digram greater yang
+⚍,digram lesser yin
+⚎,digram lesser yang
+⚏,digram greater yin
+⚐,white flag
+⚑,black flag
+⚒,hammer and pick
+⚓,anchor
+⚔,crossed swords
+⚕,staff of aesculapius
+⚖,scales
+⚗,alembic
+⚘,flower
+⚙,gear
+⚚,staff of hermes
+⚛,atom
+⚜,fleur-de-lis
+⚝,outlined star
+⚞,left facing chevron
+⚟,right facing chevron
+⚠,warning sign
+⚡,lightning/high voltage
+⚢,female-female symbol
+⚣,male-male symbol
+⚤,male-female symbol
+⚥,male-female combined
+⚦,male with stroke
+⚧,transgender
+⚨,female with stroke
+⚩,male with horizontal stroke
+⚪,white circle
+⚫,black circle
+⚬,medium small white circle
+⚭,marriage symbol
+⚮,divorce symbol
+⚯,unmarried partnership
+⚰,coffin
+⚱,funeral urn
+⚲,neuter
+⌀,diameter
+⌁,electric arrow
+⌂,house
+⌃,up arrowhead
+⌄,down arrowhead
+⌅,projective
+⌆,perspective
+⌇,wavy line
+⌈,left ceiling
+⌉,right ceiling
+⌊,left floor
+⌋,right floor
+⌌,bottom right crop
+⌍,bottom left crop
+⌎,top right crop
+⌏,top left crop
+⌐,reversed not sign
+⌑,square lozenge
+⌒,arc
+⌓,segment
+⌔,sector
+⌕,telephone recorder
+⌖,position indicator
+⌗,viewdata square
+⌘,command key
+⌙,turned not sign
+⌚,watch
+⌛,hourglass
+⌜,top left corner
+⌝,top right corner
+⌞,bottom left corner
+⌟,bottom right corner
+⌠,top integral
+⌡,bottom integral
+⌢,frown
+⌣,smile
+⌤,keyboard enter
+⌥,option key
+⌦,erase right
+⌧,x in rectangle
+⌨,keyboard
+⌫,erase left
+⌬,benzene ring
+⌭,cylindricity
+⌮,all around profile
+⌯,symmetry
+⌰,total runout
+⌱,dimension origin
+⌲,conical taper
+⌳,slope
+⌴,counterbore
+⌵,countersink
+⎀,insertion symbol
+⎁,continuous underline
+⎂,discontinuous underline
+⎃,emphasis
+⎄,composition
+⎅,white square with center dot
+⎆,enter symbol
+⎇,alt key
+⎈,helm symbol
+⎉,circled horizontal bar
+⎊,circled two horizontal bars
+⎋,escape key
+⎌,undo
+⎍,monostable
+⎎,hysteresis
+⎏,open-circuit output l-type
+⎐,open-circuit output h-type
+⎑,passive pull-down output
+⎒,passive pull-up output
+⎓,direct current
+⎔,software function
+⎕,apl box
+⎖,decimal separator
+⎗,previous page
+⎘,next page
+⎙,print screen
+⎚,clear screen
+⎛,left paren upper
+⎜,left paren extension
+⎝,left paren lower
+⎞,right paren upper
+⎟,right paren extension
+⎠,right paren lower
+⎡,left bracket upper
+⎢,left bracket extension
+⎣,left bracket lower
+⎤,right bracket upper
+⎥,right bracket extension
+⎦,right bracket lower
+⎧,left brace upper
+⎨,left brace middle
+⎩,left brace lower
+⎪,curly bracket extension
+⎫,right brace upper
+⎬,right brace middle
+⎭,right brace lower
+⎮,integral extension
+⎯,horizontal line extension
+⎰,upper left tortoise shell
+⎱,lower right tortoise shell
+␀,null
+␁,start of heading
+␂,start of text
+␃,end of text
+␄,end of transmission
+␅,enquiry
+␆,acknowledge
+␇,bell
+␈,backspace
+␉,horizontal tab
+␊,line feed
+␋,vertical tab
+␌,form feed
+␍,carriage return
+␎,shift out
+␏,shift in
+␐,data link escape
+␑,device control 1
+␒,device control 2
+␓,device control 3
+␔,device control 4
+␕,negative acknowledge
+␖,synchronous idle
+␗,end of transmission block
+␘,cancel
+␙,end of medium
+␚,substitute
+␛,escape
+␜,file separator
+␝,group separator
+␞,record separator
+␟,unit separator
+␠,space
+␡,delete
+␢,blank symbol
+␣,open box
+␤,newline
+␥,delete form two
+␦,substitute form two
+①,circled 1
+②,circled 2
+③,circled 3
+④,circled 4
+⑤,circled 5
+⑥,circled 6
+⑦,circled 7
+⑧,circled 8
+⑨,circled 9
+⑩,circled 10
+⑪,circled 11
+⑫,circled 12
+⑬,circled 13
+⑭,circled 14
+⑮,circled 15
+⑯,circled 16
+⑰,circled 17
+⑱,circled 18
+⑲,circled 19
+⑳,circled 20
+Ⓐ,circled A
+Ⓑ,circled B
+Ⓒ,circled C
+Ⓓ,circled D
+Ⓔ,circled E
+Ⓕ,circled F
+Ⓖ,circled G
+Ⓗ,circled H
+Ⓘ,circled I
+Ⓙ,circled J
+Ⓚ,circled K
+Ⓛ,circled L
+Ⓜ,circled M
+Ⓝ,circled N
+Ⓞ,circled O
+Ⓟ,circled P
+Ⓠ,circled Q
+Ⓡ,circled R
+Ⓢ,circled S
+Ⓣ,circled T
+Ⓤ,circled U
+Ⓥ,circled V
+Ⓦ,circled W
+Ⓧ,circled X
+Ⓨ,circled Y
+Ⓩ,circled Z
+⓪,circled 0
+⓫,negative circled 11
+⓬,negative circled 12
+⓭,negative circled 13
+⓮,negative circled 14
+⓯,negative circled 15
+⓰,negative circled 16
+⓱,negative circled 17
+⓲,negative circled 18
+⓳,negative circled 19
+⓴,negative circled 20
+❶,negative circled 1
+❷,negative circled 2
+❸,negative circled 3
+❹,negative circled 4
+❺,negative circled 5
+❻,negative circled 6
+❼,negative circled 7
+❽,negative circled 8
+❾,negative circled 9
+❿,negative circled 10
+⬀,north east white arrow
+⬁,north west white arrow
+⬂,south east white arrow
+⬃,south west white arrow
+⬄,left right white arrow
+⬅,left black arrow
+⬆,up black arrow
+⬇,down black arrow
+⬈,north east black arrow
+⬉,north west black arrow
+⬊,south east black arrow
+⬋,south west black arrow
+⬌,left right black arrow
+⬍,up down black arrow
+⬎,right up curved arrow
+⬏,right down curved arrow
+⬐,left up curved arrow
+⬑,left down curved arrow
+⬒,square with top half black
+⬓,square with bottom half black
+⬔,square with upper right diag half black
+⬕,square with lower left diag half black
+⬖,diamond with left half black
+⬗,diamond with right half black
+⬘,diamond with top half black
+⬙,diamond with bottom half black
+⬚,dotted square
+⬛,black large square
+⬜,white large square
+⬝,black very small square
+⬞,white very small square
+⬟,black pentagon
+⬠,white pentagon
+⬡,white hexagon
+⬢,black hexagon
+⬣,horizontal black hexagon
+⬤,black circle
+⬥,black diamond
+⬦,white diamond containing small black diamond
+⬧,white square containing small black square
+⬨,very small black diamond
+⬩,white square with rounded corners
+⬪,white square containing black small square
+⬫,square with left vertical line
+⬬,square with right vertical line
+⬭,white ellipse
+⬮,black ellipse
+⬯,white circle with left half black
+⬰,left arrow with small circle
+⬱,three left arrows
+⬲,left arrow with circled plus
+⬳,long left squiggle arrow
+⬴,left two-headed arrow with vertical stroke
+⬵,left two-headed arrow with double vertical stroke
+⬶,left two-headed arrow from bar
+⬷,left two-headed triple dash arrow
+⬸,left arrow with dotted stem
+⬹,left arrow with tail with vertical stroke
+⬺,left arrow with tail with double vertical stroke
+⬻,left two-headed arrow with tail
+⬼,left two-headed arrow with tail with vertical stroke
+⬽,left two-headed arrow with tail with double vertical stroke
+⬾,left arrow through x
+⬿,wave arrow pointing directly left
+⭀,equals sign above left arrow
+⭁,reverse tilde above left arrow
+⭂,left arrow above reverse almost equal
+⭃,right arrow through greater-than
+⭄,right arrow through superset
+⭅,left fish tail
+⭆,right fish tail
+⭇,left white arrow from wall
+⭈,right white arrow from wall
+⭉,left white arrow to wall
+⭊,right white arrow to wall
+⭋,north west arrow to corner
+⭌,south east arrow to corner
+⭍,up triangle arrowhead
+⭎,up white triangle-headed arrow on pedestal
+⭏,down white triangle-headed arrow on pedestal
+⭐,white medium star
+⭑,black small star
+⭒,white small star
+⭓,black right-pointing pentagon
+⭔,white right-pointing pentagon
+⭕,heavy large circle
+⭖,negative squared latin cross
+⭗,heavy latin cross
+⭘,open centre cross
+⭙,heavy open centre cross
+✀,scissors upper blade
+✁,scissors lower blade
+✂,scissors
+✃,scissors cutting paper
+✄,white scissors
+✅,white heavy check mark
+✆,telephone location sign
+✇,tape drive
+✈,airplane
+✉,envelope
+✊,raised fist
+✋,raised hand
+✌,victory hand
+✍,writing hand
+✎,lower right pencil
+✏,pencil
+✐,upper right pencil
+✑,white nib
+✒,black nib
+✓,check mark
+✔,heavy check mark
+✕,multiplication x
+✖,heavy multiplication x
+✗,ballot x
+✘,heavy ballot x
+✙,outlined greek cross
+✚,heavy greek cross
+✛,open centre cross
+✜,heavy open centre cross
+✝,latin cross
+✞,shadowed latin cross
+✟,outlined latin cross
+✠,maltese cross
+✡,star of david
+✢,four teardrop-spoked asterisk
+✣,four balloon-spoked asterisk
+✤,heavy four balloon-spoked asterisk
+✥,four club-spoked asterisk
+✦,black four pointed star
+✧,white four pointed star
+✨,sparkles
+✩,stress outlined white star
+✪,circled white star
+✫,open centre black star
+✬,black centre white star
+✭,outlined black star
+✮,heavy outlined black star
+✯,pinwheel star
+✰,shadowed white star
+✱,heavy asterisk
+✲,open centre asterisk
+✳,eight spoked asterisk
+✴,eight pointed star
+✵,eight pointed pinwheel star
+✶,six pointed star
+✷,eight pointed rectilinear star
+✸,heavy eight pointed rectilinear star
+✹,twelve pointed star
+✺,sixteen pointed asterisk
+✻,teardrop-spoked asterisk
+✼,open centre teardrop-spoked asterisk
+✽,heavy teardrop-spoked asterisk
+✾,six petalled black and white florette
+✿,black florette
+❀,white florette
+❁,eight petalled outlined black florette
+❂,circled open centre eight pointed star
+❃,heavy teardrop-spoked pinwheel asterisk
+❄,snowflake
+❅,tight trifoliate snowflake
+❆,heavy chevron snowflake
+❇,sparkle
+❈,heavy sparkle
+❉,balloon-spoked asterisk
+❊,eight teardrop-spoked propeller asterisk
+❋,heavy eight teardrop-spoked propeller asterisk
+❌,cross mark
+❍,shadowed white circle
+❎,negative squared cross mark
+❏,lower right drop-shadowed white square
+❐,upper right drop-shadowed white square
+❑,lower right shadowed white square
+❒,upper right shadowed white square
+❓,black question mark
+❔,white question mark
+❕,white exclamation mark
+❖,black diamond minus white x
+❗,heavy exclamation mark
+❘,light vertical bar
+❙,medium vertical bar
+❚,heavy vertical bar
+❛,heavy single turned comma quote
+❜,heavy single comma quote
+❝,heavy double turned comma quote
+❞,heavy double comma quote
+❟,heavy low single comma quote
+❠,heavy low double comma quote
+❡,curved stem paragraph sign
+❢,heavy exclamation mark ornament
+❣,heavy heart exclamation mark ornament
+❤,heavy black heart
+❥,rotated heavy black heart bullet
+❦,floral heart
+❧,rotated floral heart bullet
+➀,circled digit 1
+➁,circled digit 2
+➂,circled digit 3
+➃,circled digit 4
+➄,circled digit 5
+➅,circled digit 6
+➆,circled digit 7
+➇,circled digit 8
+➈,circled digit 9
+➉,circled digit 10
+➊,negative circled number 1
+➋,negative circled number 2
+➌,negative circled number 3
+➍,negative circled number 4
+➎,negative circled number 5
+➏,negative circled number 6
+➐,negative circled number 7
+➑,negative circled number 8
+➒,negative circled number 9
+➓,negative circled number 10
+➔,heavy wide-headed right arrow
+➕,heavy plus sign
+➖,heavy minus sign
+➗,heavy division sign
+➘,heavy south east arrow
+➙,heavy right arrow
+➚,heavy north east arrow
+➛,drafting point right arrow
+➜,heavy round-tipped right arrow
+➝,triangle-headed right arrow
+➞,heavy triangle-headed right arrow
+➟,dashed triangle-headed right arrow
+➠,heavy dashed triangle-headed right arrow
+➡,black right arrow
+➢,3d top-lighted right arrowhead
+➣,3d bottom-lighted right arrowhead
+➤,black right arrowhead
+➥,heavy black curved down and right arrow
+➦,heavy black curved up and right arrow
+➧,squat black right arrow
+➨,heavy concave-pointed black right arrow
+➩,right-shaded white right arrow
+➪,left-shaded white right arrow
+➫,back-tilted shadowed white right arrow
+➬,front-tilted shadowed white right arrow
+➭,heavy lower right-shadowed white right arrow
+➮,heavy upper right-shadowed white right arrow
+➯,notched lower right-shadowed white right arrow
+➰,curly loop
+➱,notched upper right-shadowed white right arrow
+➲,circled heavy white right arrow
+➳,white-feathered right arrow
+➴,black-feathered south east arrow
+➵,black-feathered right arrow
+➶,black-feathered north east arrow
+➷,heavy black-feathered south east arrow
+➸,heavy black-feathered right arrow
+➹,heavy black-feathered north east arrow
+➺,teardrop-barbed right arrow
+➻,heavy teardrop-shanked right arrow
+➼,wedge-tailed right arrow
+➽,heavy wedge-tailed right arrow
+➾,open-outlined right arrow
+➿,double curly loop
+⟀,three dimensional angle
+⟁,white triangle containing small white triangle
+⟂,perpendicular
+⟃,open subset
+⟄,open superset
+⟅,left s-shaped bag delimiter
+⟆,right s-shaped bag delimiter
+⟇,or with dot inside
+⟈,reverse solidus preceding subset
+⟉,superset preceding solidus
+⟊,vertical bar with horizontal stroke
+⟋,rising diagonal crossing falling diagonal
+⟌,long division
+⟍,falling diagonal crossing rising diagonal
+⟎,set minus
+⟏,vector or cross product
+⟐,homothetic
+⟑,and with dot
+⟒,element of opening upwards
+⟓,lower right corner with dot
+⟔,upper left corner with dot
+⟕,left outer join
+⟖,right outer join
+⟗,full outer join
+⟘,large up tack
+⟙,large down tack
+⟚,left and right double turnstile
+⟛,left and right tack
+⟜,left multimap
+⟝,long right tack
+⟞,long left tack
+⟟,up tack with circle above
+⟠,lozenge divided by horizontal rule
+⟡,white concave-sided diamond
+⟢,white concave-sided diamond with leftwards tick
+⟣,white concave-sided diamond with rightwards tick
+⟤,white square with leftwards tick
+⟥,white square with rightwards tick
+⟦,left white square bracket
+⟧,right white square bracket
+⟨,left angle bracket
+⟩,right angle bracket
+⟪,left double angle bracket
+⟫,right double angle bracket
+⟬,left white tortoise shell bracket
+⟭,right white tortoise shell bracket
+⟮,left flattened parenthesis
+⟯,right flattened parenthesis

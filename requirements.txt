@@ -1,0 +1,43 @@
+# Core Dependencies
+numpy>=1.24.0
+scipy>=1.11.0
+sympy>=1.12
+pydantic>=2.5.0
+typing-extensions>=4.8.0
+aiohttp>=3.9.0
+msgpack>=1.0.7
+orjson>=3.9.10
+structlog>=23.2.0
+
+# Machine Learning (TinyAleph & Reso-LLM)
+torch>=2.1.0
+einops>=0.7.0
+transformers>=4.35.0
+datasets>=2.14.0
+huggingface_hub>=0.19.0
+
+# Visualization
+matplotlib>=3.8.0
+plotly>=5.18.0
+networkx>=3.2
+gradio>=4.0.0
+
+# Distributed Computing
+ray>=2.8.0
+dask>=2023.11.0
+websockets>=12.0
+
+# Development & Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-benchmark>=4.0.0
+hypothesis>=6.88.0
+mypy>=1.7.0
+ruff>=0.1.6
+black>=23.11.0
+pre-commit>=3.5.0
+
+# Optional GPU/Accelerator Support
+# jax>=0.4.20
+# jaxlib>=0.4.20
+# cupy>=12.0.0

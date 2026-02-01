@@ -1,0 +1,3 @@
+"""
+TinyAleph test suite.
+"""
