@@ -89,6 +89,7 @@ class FusionConfig:
     fusion_alpha: float = 0.5  # Initial fusion weight (higher for knowledge injection)
     learnable_alpha: bool = True  # Make fusion weight learnable
     fusion_norm: str = "output"  # "output", "fusion", "none"
+    adapter_rank: int = 128  # Rank for output adapter
     
     # Component configurations
     prime: PrimeConfig = field(default_factory=PrimeConfig)

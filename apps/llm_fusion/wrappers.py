@@ -126,7 +126,7 @@ class ResonanceWrapper(nn.Module):
         self.output_adapter = OutputAdapter(
             hidden_dim=self.hidden_dim,
             vocab_size=vocab_size,
-            rank=128,  # Low-rank for efficiency
+            rank=self.config.adapter_rank,  # Use rank from config
         )
         print(f"Output adapter created: {sum(p.numel() for p in self.output_adapter.parameters()):,} params")
         

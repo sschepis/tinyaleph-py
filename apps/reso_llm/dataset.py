@@ -21,10 +21,12 @@ Supported HuggingFace Datasets:
 - sahil2801/CodeAlpaca-20k (code instruction/input/output)
 - TokenBender/code_instructions_122k_alpaca_style (code instruction/input/output)
 - knkarthick/dialogsum (dialogue/summary)
-- lonestar108/sexygpt (user/assistant pairs)
-- lonestar108/enlightenedllm (instruction/output pairs)
-- lonestar108/rawdata (input/output pairs)
-- Any dataset with instruction/output, prompt/response, input/output, or question/answer pairs
+    - lonestar108/sexygpt (user/assistant pairs)
+    - lonestar108/enlightenedllm (instruction/output pairs)
+    - lonestar108/rawdata (input/output pairs)
+    - lonestar108/claude-conversations (messages array)
+    - Any dataset with instruction/output, prompt/response, input/output, or question/answer pairs
+
 
 Unified Format:
 All datasets are converted to match the chat template in inference.py:
@@ -621,6 +623,31 @@ class HuggingFaceDataset(TextDataset):
             f"<|assistant|>\n{output}\n<|endofassistant|>"
         )
 
+    def _format_claude_example(self, item: dict) -> str:
+        """
+        Format lonestar108/claude-conversations examples.
+        
+        Structure: conversation_id, title, messages (list of {role, content})
+        """
+        messages = item.get("messages", [])
+        if not messages:
+            return ""
+            
+        conversation = []
+        for msg in messages:
+            role = msg.get("role", "").lower()
+            content = msg.get("content", "").strip()
+            
+            if not content:
+                continue
+                
+            if role == "user":
+                conversation.append(f"<|user|>\n{content}\n<|endofuser|>")
+            elif role == "assistant":
+                conversation.append(f"<|assistant|>\n{content}\n<|endofassistant|>")
+                
+        return "\n".join(conversation) if conversation else ""
+
     def _format_pair_example(self, item: dict, prompt_key: str, response_key: str) -> str:
         """
         Format instruction/output or prompt/response pairs.
@@ -760,6 +787,8 @@ class HuggingFaceDataset(TextDataset):
                                                      "TokenBender/code_instructions_122k_alpaca_style"] or
                              (self.dataset_name.startswith("code") and
                               "instruction" in columns and "output" in columns))
+            is_claude = (self.dataset_name == "lonestar108/claude-conversations" or
+                        ("messages" in columns and "conversation_id" in columns))
             
             # Determine text column
             text_column = None
@@ -786,6 +815,8 @@ class HuggingFaceDataset(TextDataset):
                 print("Detected Chatbot Arena format (conversation_a/b)")
             elif is_code_alpaca:
                 print("Detected Code Alpaca format (instruction/input/output)")
+            elif is_claude:
+                print("Detected Claude Conversations format (messages array)")
             elif is_dialogsum:
                 print("Detected DialogSum format")
             elif has_instruction:
@@ -834,6 +865,8 @@ class HuggingFaceDataset(TextDataset):
                     text_to_add = self._format_chatbot_arena_example(item)
                 elif is_code_alpaca:
                     text_to_add = self._format_code_alpaca_example(item)
+                elif is_claude:
+                    text_to_add = self._format_claude_example(item)
                 elif is_dialogsum:
                     text_to_add = self._format_dialogsum_example(item)
                 elif has_instruction:

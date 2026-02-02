@@ -554,7 +554,18 @@ class ResonanceFusionLayer(nn.Module):
         elif self.fusion_mode == "residual":
             # Blend with residual
             alpha = torch.sigmoid(self.alpha) if isinstance(self.alpha, nn.Parameter) else self.alpha
-            output = (1 - alpha) * residual + alpha * self.out_proj(x)
+            
+            # DEBUG
+            proj = self.out_proj(x)
+            # if torch.rand(1).item() < 0.01: # Print occasionally
+            # print(f"DEBUG: alpha={alpha.item():.6f} | res_norm={residual.norm().item():.2f} | proj_norm={proj.norm().item():.2f}")
+            
+            output = (1 - alpha) * residual + alpha * proj
+            
+            # DEBUG
+            # if torch.rand(1).item() < 0.01:
+            # diff = output - residual
+            # print(f"DEBUG: diff_norm={diff.norm().item():.4f}")
 
         if self.fusion_norm == "output":
             output = self.layer_norm(output)
