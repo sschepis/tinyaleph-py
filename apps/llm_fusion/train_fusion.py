@@ -51,6 +51,11 @@ from apps.llm_fusion import (
     FusionTrainer,
     create_fusion_dataset,
 )
+from apps.reso_llm.training_templates import (
+    SPECIAL_TOKENS as RESO_SPECIAL_TOKENS,
+    TrainingTemplateType,
+    create_template,
+)
 
 
 def load_training_texts(data_path: Optional[str] = None) -> List[str]:
@@ -93,20 +98,118 @@ def load_training_texts(data_path: Optional[str] = None) -> List[str]:
     ]
 
 
-def get_model_config(model_name: str) -> FusionConfig:
+def get_model_config(model_name: str, num_layers: Optional[int] = None, profile: str = "enrichment") -> FusionConfig:
     """Get appropriate FusionConfig for different model types."""
     model_name_lower = model_name.lower()
     
+    if profile == "enrichment":
+        return FusionConfig.enrichment(num_layers=num_layers)
+    if profile == "minimal":
+        return FusionConfig.minimal()
+    if profile == "full":
+        return FusionConfig.full()
+
     if "gpt2" in model_name_lower:
         return FusionConfig.for_gpt2()
     elif "llama" in model_name_lower or "tinyllama" in model_name_lower:
         # TinyLlama has 22 layers
-        return FusionConfig.for_llama(num_layers=22)
+        return FusionConfig.for_llama(num_layers=num_layers or 22)
     elif "mistral" in model_name_lower:
-        return FusionConfig.for_llama(num_layers=32)
+        return FusionConfig.for_llama(num_layers=num_layers or 32)
     else:
         # Generic config
         return FusionConfig.standard()
+
+
+def _is_chat_formatted(text: str) -> bool:
+    """Detect whether text already contains chat template tokens."""
+    required = [
+        RESO_SPECIAL_TOKENS["user_start"],
+        RESO_SPECIAL_TOKENS["user_end"],
+        RESO_SPECIAL_TOKENS["assistant_start"],
+        RESO_SPECIAL_TOKENS["assistant_end"],
+    ]
+    return all(tok in text for tok in required)
+
+
+def format_texts_with_chat_template(
+    texts: List[str],
+    system_prompt: Optional[str] = None,
+    user_prompt: Optional[str] = None,
+) -> List[str]:
+    """Wrap plain texts into the ResoLLM chat template format."""
+    template = create_template(TrainingTemplateType.CHAT, system_prompt=system_prompt)
+    wrapped = []
+    for text in texts:
+        if _is_chat_formatted(text):
+            wrapped.append(text)
+            continue
+        data = {
+            "user": user_prompt or "Please respond.",
+            "assistant": text,
+        }
+        wrapped.append(template.format_example(data))
+    return wrapped
+
+
+def build_chat_prompt(prompt: str, system_prompt: Optional[str] = None) -> str:
+    """Build a chat-formatted prompt for inference."""
+    system_prompt = system_prompt or "You are a helpful, harmless, and honest AI assistant."
+    return (
+        f"{RESO_SPECIAL_TOKENS['system_start']}\n"
+        f"{system_prompt}\n"
+        f"{RESO_SPECIAL_TOKENS['system_end']}\n"
+        f"{RESO_SPECIAL_TOKENS['user_start']}\n"
+        f"{prompt}\n"
+        f"{RESO_SPECIAL_TOKENS['user_end']}\n"
+        f"{RESO_SPECIAL_TOKENS['assistant_start']}\n"
+    )
+
+
+def _encode_no_special_tokens(tokenizer, text: str) -> List[int]:
+    try:
+        return tokenizer.encode(text, add_special_tokens=False)
+    except TypeError:
+        return tokenizer.encode(text)
+
+
+def _strip_after_any(text: str, tokens: List[str]) -> str:
+    for tok in tokens:
+        if tok in text:
+            text = text.split(tok)[0]
+    return text
+
+
+def _clean_chat_response(text: str) -> str:
+    text = _strip_after_any(
+        text,
+        [
+            RESO_SPECIAL_TOKENS["assistant_end"],
+            RESO_SPECIAL_TOKENS["user_start"],
+            RESO_SPECIAL_TOKENS["system_start"],
+            RESO_SPECIAL_TOKENS["eos"],
+        ],
+    )
+    return text.strip()
+
+
+def _decode_response_only(tokenizer, prompt: str, generated_ids: torch.Tensor) -> Optional[str]:
+    try:
+        prompt_ids = tokenizer.encode(prompt, return_tensors="pt")
+        prompt_len = prompt_ids.shape[1]
+    except TypeError:
+        prompt_ids = tokenizer.encode(prompt)
+        prompt_len = len(prompt_ids)
+
+    if generated_ids.dim() > 1:
+        generated_ids = generated_ids[0]
+
+    if generated_ids.numel() <= prompt_len:
+        return None
+
+    response_ids = generated_ids[prompt_len:]
+    text = tokenizer.decode(response_ids, skip_special_tokens=True)
+    return _clean_chat_response(text)
 
 
 def main():
@@ -130,7 +233,7 @@ def main():
     
     # Training arguments
     parser.add_argument("--steps", type=int, default=1000, help="Training steps")
-    parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
     parser.add_argument("--warmup", type=int, default=50, help="Warmup steps")
     parser.add_argument("--batch-size", type=int, default=1, help="Batch size")
     parser.add_argument("--max-length", type=int, default=256, help="Max sequence length")
@@ -141,9 +244,24 @@ def main():
     parser.add_argument("--entropy-weight", type=float, default=0.05, help="Entropy regularization weight")
     
     # Fusion configuration
+    parser.add_argument(
+        "--fusion-profile",
+        choices=["enrichment", "standard", "minimal", "full"],
+        default="enrichment",
+        help="Fusion profile preset"
+    )
     parser.add_argument("--fusion-layers", type=int, nargs="+", default=None, 
                         help="Layer indices for fusion (e.g., 5 11 16 21)")
-    parser.add_argument("--fusion-alpha", type=float, default=0.1, help="Initial fusion weight")
+    parser.add_argument("--fusion-alpha", type=float, default=None, help="Initial fusion weight")
+    parser.add_argument("--adapter-lr-mult", type=float, default=None, help="LR multiplier for output adapter")
+    parser.add_argument("--fusion-lr-mult", type=float, default=None, help="LR multiplier for fusion layers")
+    parser.add_argument("--adapter-warmup-steps", type=int, default=None, help="Warmup steps training adapter only")
+
+    # Chat template formatting
+    parser.add_argument("--chat-template", action="store_true", default=True, help="Use ResoLLM chat template formatting")
+    parser.add_argument("--no-chat-template", action="store_false", dest="chat_template", help="Disable chat template formatting")
+    parser.add_argument("--system-prompt", default=None, help="System prompt for chat template")
+    parser.add_argument("--user-prompt", default=None, help="Default user prompt for wrapping plain texts")
     
     # Output
     parser.add_argument("--output", default="runs/fusion_train", help="Output directory")
@@ -190,13 +308,19 @@ def main():
     
     # Get fusion config
     print("\nConfiguring fusion layers...")
-    config = get_model_config(args.model)
+    num_layers = getattr(base_model.config, "num_hidden_layers", None)
+    if num_layers is None:
+        num_layers = getattr(base_model.config, "n_layer", None)
+    if num_layers is None:
+        num_layers = getattr(base_model.config, "num_layers", None)
+    config = get_model_config(args.model, num_layers=num_layers, profile=args.fusion_profile)
     
     # Override fusion positions if specified
     if args.fusion_layers:
         config.fusion_positions = args.fusion_layers
     
-    config.fusion_alpha = args.fusion_alpha
+    if args.fusion_alpha is not None:
+        config.fusion_alpha = args.fusion_alpha
     
     print(f"  Hidden dim: {base_model.config.hidden_size}")
     print(f"  Num layers: {base_model.config.num_hidden_layers}")
@@ -223,7 +347,13 @@ def main():
         print("\n" + "="*60)
         print("EVALUATION MODE")
         print("="*60)
-        evaluate_model(model, tokenizer, device)
+        evaluate_model(
+            model,
+            tokenizer,
+            device,
+            chat_template=args.chat_template,
+            system_prompt=args.system_prompt,
+        )
         return
     
     # Load training data
@@ -237,19 +367,63 @@ def main():
         training_texts = training_texts * multiplier
         print(f"  Repeated to {len(training_texts)} samples")
     
-    dataset = create_fusion_dataset(training_texts, tokenizer, max_length=args.max_length)
+    if args.chat_template:
+        training_texts = format_texts_with_chat_template(
+            training_texts,
+            system_prompt=args.system_prompt,
+            user_prompt=args.user_prompt,
+        )
+        print("  Chat template formatting: enabled")
+    else:
+        print("  Chat template formatting: disabled")
+
+    assistant_start_ids = None
+    assistant_end_ids = None
+    if args.chat_template:
+        assistant_start_ids = _encode_no_special_tokens(
+            tokenizer,
+            RESO_SPECIAL_TOKENS["assistant_start"],
+        )
+        assistant_end_ids = _encode_no_special_tokens(
+            tokenizer,
+            RESO_SPECIAL_TOKENS["assistant_end"],
+        )
+
+    dataset = create_fusion_dataset(
+        training_texts,
+        tokenizer,
+        max_length=args.max_length,
+        assistant_start_token_ids=assistant_start_ids,
+        assistant_end_token_ids=assistant_end_ids,
+        assistant_start=RESO_SPECIAL_TOKENS["assistant_start"] if args.chat_template else None,
+        assistant_end=RESO_SPECIAL_TOKENS["assistant_end"] if args.chat_template else None,
+    )
     
+    adapter_lr_mult = args.adapter_lr_mult
+    fusion_lr_mult = args.fusion_lr_mult
+    adapter_warmup_steps = args.adapter_warmup_steps
+    if adapter_lr_mult is None:
+        adapter_lr_mult = 2.0 if args.fusion_profile == "enrichment" else 1.0
+    if fusion_lr_mult is None:
+        fusion_lr_mult = 0.1 if args.fusion_profile == "enrichment" else 0.3
+    if adapter_warmup_steps is None:
+        adapter_warmup_steps = 200 if args.fusion_profile == "enrichment" else 0
+
     # Training config
     train_config = TrainingConfig(
         learning_rate=args.lr,
         max_steps=args.steps,
         warmup_steps=args.warmup,
+        batch_size=args.batch_size,
         log_interval=args.log_interval,
         save_interval=args.save_interval,
         eval_interval=args.save_interval,
         coherence_loss_weight=args.coherence_weight,
         kuramoto_loss_weight=args.kuramoto_weight,
         entropy_loss_weight=args.entropy_weight,
+        adapter_lr_mult=adapter_lr_mult,
+        fusion_lr_mult=fusion_lr_mult,
+        adapter_warmup_steps=adapter_warmup_steps,
         output_dir=args.output,
     )
     
@@ -288,10 +462,16 @@ def main():
     print("\n" + "="*60)
     print("FINAL EVALUATION")
     print("="*60)
-    evaluate_model(model, tokenizer, device)
+    evaluate_model(
+        model,
+        tokenizer,
+        device,
+        chat_template=args.chat_template,
+        system_prompt=args.system_prompt,
+    )
 
 
-def evaluate_model(model, tokenizer, device):
+def evaluate_model(model, tokenizer, device, chat_template: bool = False, system_prompt: Optional[str] = None):
     """Generate sample outputs with stability monitoring."""
     gen_config = GenerationConfig(
         temperature=0.8,
@@ -311,14 +491,24 @@ def evaluate_model(model, tokenizer, device):
     ]
     
     for prompt in prompts:
+        display_prompt = prompt
+        if chat_template:
+            prompt = build_chat_prompt(prompt, system_prompt=system_prompt)
         print(f"\n{'─'*60}")
-        print(f"PROMPT: {prompt}")
+        print(f"PROMPT: {display_prompt}")
         print('─'*60)
         
         result = generator.generate(prompt, max_length=60)
+        generated_text = result.generated_text
+        if chat_template:
+            response_text = _decode_response_only(tokenizer, prompt, result.generated_ids)
+            if response_text:
+                generated_text = response_text
+            else:
+                generated_text = _clean_chat_response(generated_text or "")
         
         print(f"\nGENERATED:")
-        print(result.generated_text)
+        print(generated_text)
         
         print(f"\nMETRICS:")
         print(f"  Coherence: {result.stability_metrics.mean_coherence:.3f}")

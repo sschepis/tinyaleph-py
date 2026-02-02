@@ -25,10 +25,14 @@ class TrainingConfig:
     # Optimization
     learning_rate: float = 1e-4
     weight_decay: float = 0.01
+    adapter_lr_mult: float = 1.0
+    fusion_lr_mult: float = 0.3
+    adapter_warmup_steps: int = 0
     warmup_steps: int = 100
     max_steps: int = 10000
     gradient_accumulation: int = 1
     max_grad_norm: float = 1.0
+    batch_size: int = 1
     
     # Scheduling
     scheduler_type: str = "cosine"  # "cosine", "linear", "constant"
@@ -212,12 +216,18 @@ class FusionTrainer:
         self.global_step = 0
         self.epoch = 0
         self.best_eval_loss = float('inf')
+        self._fusion_warmup_active = False
         
         # Logging
         self.log_history: List[Dict[str, Any]] = []
         
         # Create output directory
         os.makedirs(self.config.output_dir, exist_ok=True)
+
+        # Optional adapter-only warmup
+        if self.config.adapter_warmup_steps > 0:
+            self._set_fusion_requires_grad(False)
+            self._fusion_warmup_active = True
     
     def _get_device(self) -> torch.device:
         """Determine device."""
@@ -229,13 +239,34 @@ class FusionTrainer:
     
     def _create_optimizer(self) -> torch.optim.Optimizer:
         """Create optimizer for fusion parameters (including output adapter)."""
-        # Get fusion parameters (includes output adapter via get_fusion_parameters)
+        # Prefer explicit adapter/fusion separation for controlled deltas
+        if hasattr(self.model, "get_adapter_parameters") and hasattr(self.model, "get_fusion_only_parameters"):
+            adapter_params = [p for p in self.model.get_adapter_parameters() if p.requires_grad]
+            fusion_params = [p for p in self.model.get_fusion_only_parameters() if p.requires_grad]
+            param_groups = []
+            if fusion_params:
+                param_groups.append({
+                    "params": fusion_params,
+                    "lr": self.config.learning_rate * self.config.fusion_lr_mult,
+                })
+            if adapter_params:
+                param_groups.append({
+                    "params": adapter_params,
+                    "lr": self.config.learning_rate * self.config.adapter_lr_mult,
+                })
+            if param_groups:
+                return torch.optim.AdamW(
+                    param_groups,
+                    lr=self.config.learning_rate,
+                    weight_decay=self.config.weight_decay,
+                )
+        
+        # Fallback: single param group (fusion + adapter or all params)
         if hasattr(self.model, "get_fusion_parameters"):
             params = self.model.get_fusion_parameters()
         elif hasattr(self.model, "fusion"):
             params = list(self.model.fusion.parameters())
         else:
-            # Fallback: all parameters
             params = self.model.parameters()
         
         return torch.optim.AdamW(
@@ -263,6 +294,15 @@ class FusionTrainer:
                 self.optimizer,
                 factor=1.0,
             )
+
+    def _set_fusion_requires_grad(self, enabled: bool):
+        """Enable/disable gradients for fusion layers only."""
+        if hasattr(self.model, "get_fusion_only_parameters"):
+            for param in self.model.get_fusion_only_parameters():
+                param.requires_grad = enabled
+        elif hasattr(self.model, "fusion"):
+            for param in self.model.fusion.parameters():
+                param.requires_grad = enabled
     
     def train(self) -> Dict[str, Any]:
         """
@@ -274,7 +314,7 @@ class FusionTrainer:
         # Create data loader
         train_loader = DataLoader(
             self.train_dataset,
-            batch_size=1,  # Adjust based on memory
+            batch_size=self.config.batch_size,
             shuffle=True,
             num_workers=0,
         )
@@ -289,6 +329,10 @@ class FusionTrainer:
             for batch in train_loader:
                 if self.global_step >= self.config.max_steps:
                     break
+
+                if self._fusion_warmup_active and self.global_step >= self.config.adapter_warmup_steps:
+                    self._set_fusion_requires_grad(True)
+                    self._fusion_warmup_active = False
                 
                 # Move batch to device
                 input_ids = batch["input_ids"].to(self.device)
@@ -406,7 +450,7 @@ class FusionTrainer:
         
         eval_loader = DataLoader(
             self.eval_dataset,
-            batch_size=1,
+            batch_size=self.config.batch_size,
             shuffle=False,
         )
         
@@ -529,6 +573,10 @@ def create_fusion_dataset(
     texts: List[str],
     tokenizer: Any,
     max_length: int = 512,
+    assistant_start_token_ids: Optional[List[int]] = None,
+    assistant_end_token_ids: Optional[List[int]] = None,
+    assistant_start: Optional[str] = None,
+    assistant_end: Optional[str] = None,
 ) -> Dataset:
     """
     Create a simple dataset for fusion training.
@@ -552,17 +600,148 @@ def create_fusion_dataset(
             return {
                 "input_ids": self.encodings["input_ids"][idx],
                 "attention_mask": self.encodings["attention_mask"][idx],
+                "labels": self.encodings["labels"][idx],
             }
     
+    use_offsets = bool(assistant_start and assistant_end and getattr(tokenizer, "is_fast", False))
     encodings = tokenizer(
         texts,
         truncation=True,
         max_length=max_length,
         padding="max_length",
         return_tensors="pt",
+        return_offsets_mapping=use_offsets,
     )
+
+    labels = encodings["input_ids"].clone()
+    attention_mask = encodings.get("attention_mask")
+    if use_offsets and "offset_mapping" in encodings:
+        offset_mapping = encodings.pop("offset_mapping")
+        matched = 0
+        fallback = 0
+        for i in range(labels.size(0)):
+            offsets = offset_mapping[i]
+            if isinstance(offsets, torch.Tensor):
+                offsets = offsets.tolist()
+            mask = _assistant_only_mask_from_offsets(
+                texts[i],
+                offsets,
+                assistant_start,
+                assistant_end,
+            )
+            if not any(mask):
+                mask = [1] * len(mask)
+                fallback += 1
+            else:
+                matched += 1
+            masked_labels = [
+                token_id if keep else -100
+                for token_id, keep in zip(encodings["input_ids"][i].tolist(), mask)
+            ]
+            labels[i] = torch.tensor(masked_labels, dtype=labels.dtype)
+        total = labels.size(0)
+        print(f"  Assistant-only loss masking: {matched}/{total} samples matched, {fallback} fallback")
+    elif assistant_start_token_ids and assistant_end_token_ids:
+        matched = 0
+        fallback = 0
+        for i in range(labels.size(0)):
+            input_ids = encodings["input_ids"][i].tolist()
+            mask = _assistant_only_mask(input_ids, assistant_start_token_ids, assistant_end_token_ids)
+            if not any(mask):
+                # Fallback to full loss if no assistant spans found
+                mask = [1] * len(input_ids)
+                fallback += 1
+            else:
+                matched += 1
+            masked_labels = [
+                token_id if keep else -100
+                for token_id, keep in zip(input_ids, mask)
+            ]
+            labels[i] = torch.tensor(masked_labels, dtype=labels.dtype)
+        total = labels.size(0)
+        print(f"  Assistant-only loss masking: {matched}/{total} samples matched, {fallback} fallback")
+
+    if attention_mask is not None:
+        labels[attention_mask == 0] = -100
+
+    encodings["labels"] = labels
     
     return SimpleDataset(encodings)
+
+
+def _assistant_only_mask(
+    input_ids: List[int],
+    assistant_start_ids: List[int],
+    assistant_end_ids: List[int],
+) -> List[int]:
+    """Build a mask that keeps only assistant spans for loss computation."""
+    mask = [0] * len(input_ids)
+
+    start_positions = _find_subsequence_positions(input_ids, assistant_start_ids)
+    if not start_positions:
+        return mask
+    end_positions = _find_subsequence_positions(input_ids, assistant_end_ids)
+
+    for start_pos in start_positions:
+        content_start = start_pos + len(assistant_start_ids)
+        end_pos = len(input_ids)
+        for candidate in end_positions:
+            if candidate >= content_start:
+                end_pos = candidate
+                break
+        for i in range(content_start, end_pos):
+            mask[i] = 1
+
+    return mask
+
+
+def _find_subsequence_positions(seq: List[int], pattern: List[int]) -> List[int]:
+    """Find all starting indices of a subsequence in a sequence."""
+    if not pattern:
+        return []
+    positions = []
+    last_start = len(seq) - len(pattern)
+    for i in range(last_start + 1):
+        if seq[i:i + len(pattern)] == pattern:
+            positions.append(i)
+    return positions
+
+
+def _assistant_only_mask_from_offsets(
+    text: str,
+    offsets: List[List[int]],
+    assistant_start: str,
+    assistant_end: str,
+) -> List[int]:
+    """Build a mask that keeps only assistant spans using character offsets."""
+    if not assistant_start or not assistant_end:
+        return [0] * len(offsets)
+
+    spans = []
+    search_from = 0
+    while True:
+        start_idx = text.find(assistant_start, search_from)
+        if start_idx == -1:
+            break
+        content_start = start_idx + len(assistant_start)
+        end_idx = text.find(assistant_end, content_start)
+        if end_idx == -1:
+            end_idx = len(text)
+        spans.append((content_start, end_idx))
+        search_from = end_idx + len(assistant_end)
+
+    if not spans:
+        return [0] * len(offsets)
+
+    mask = [0] * len(offsets)
+    for i, (start, end) in enumerate(offsets):
+        if start == end:
+            continue
+        for span_start, span_end in spans:
+            if start >= span_start and end <= span_end:
+                mask[i] = 1
+                break
+    return mask
 
 
 def quick_train(

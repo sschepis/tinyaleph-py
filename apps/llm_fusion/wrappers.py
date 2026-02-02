@@ -340,6 +340,14 @@ class ResonanceWrapper(nn.Module):
         params = list(self.fusion.parameters())
         params.extend(list(self.output_adapter.parameters()))
         return params
+
+    def get_fusion_only_parameters(self) -> List[nn.Parameter]:
+        """Get trainable parameters for fusion layers only (no adapter)."""
+        return list(self.fusion.parameters())
+
+    def get_adapter_parameters(self) -> List[nn.Parameter]:
+        """Get trainable parameters for output adapter only."""
+        return list(self.output_adapter.parameters())
     
     def num_fusion_parameters(self) -> int:
         """Count number of trainable fusion parameters."""

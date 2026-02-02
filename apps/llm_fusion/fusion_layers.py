@@ -393,6 +393,7 @@ class ResonanceFusionLayer(nn.Module):
         self.hidden_dim = hidden_dim
         self.config = config
         self.fusion_mode = config.fusion_mode
+        self.fusion_norm = config.fusion_norm
         
         # Fusion weight
         if config.learnable_alpha:
@@ -538,6 +539,9 @@ class ResonanceFusionLayer(nn.Module):
                 metrics["gate_coherence"] = gate_coherence.mean().item()
         
         # === Fusion Mode ===
+        if self.fusion_norm == "fusion":
+            x = self.layer_norm(x)
+
         if self.fusion_mode == "parallel":
             # Add to residual with learned weight
             alpha = torch.sigmoid(self.alpha) if isinstance(self.alpha, nn.Parameter) else self.alpha
@@ -551,8 +555,9 @@ class ResonanceFusionLayer(nn.Module):
             # Blend with residual
             alpha = torch.sigmoid(self.alpha) if isinstance(self.alpha, nn.Parameter) else self.alpha
             output = (1 - alpha) * residual + alpha * self.out_proj(x)
-        
-        output = self.layer_norm(output)
+
+        if self.fusion_norm == "output":
+            output = self.layer_norm(output)
         
         if return_metrics:
             metrics["fusion_alpha"] = (

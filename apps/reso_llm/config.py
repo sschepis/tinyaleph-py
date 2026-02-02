@@ -47,6 +47,8 @@ class PRSCConfig:
     max_bindings: int = 1000  # Maximum semantic bindings
     composition_decay: float = 0.1  # Amplitude decay during composition
     auto_bind_frequent: bool = True  # Auto-bind frequent token patterns
+    landscape_path: Optional[str] = None  # Path to semantic premodel JSON
+    landscape_min_confidence: float = 0.0  # Filter bindings below this confidence
 
 
 @dataclass

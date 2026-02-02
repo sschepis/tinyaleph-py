@@ -63,6 +63,7 @@ class StabilityConfig:
     """Configuration for stability monitoring."""
     enabled: bool = True
     lyapunov_threshold: float = 0.1
+    coherence_threshold: float = 0.2
     entropy_window: int = 20
     auto_temperature: bool = True
     min_temperature: float = 0.3
@@ -87,6 +88,7 @@ class FusionConfig:
     fusion_mode: str = "residual"  # "parallel", "sequential", "residual"
     fusion_alpha: float = 0.5  # Initial fusion weight (higher for knowledge injection)
     learnable_alpha: bool = True  # Make fusion weight learnable
+    fusion_norm: str = "output"  # "output", "fusion", "none"
     
     # Component configurations
     prime: PrimeConfig = field(default_factory=PrimeConfig)
@@ -107,6 +109,10 @@ class FusionConfig:
         if self.fusion_mode not in valid_modes:
             raise ValueError(f"fusion_mode must be one of {valid_modes}")
         
+        valid_norms = ["output", "fusion", "none"]
+        if self.fusion_norm not in valid_norms:
+            raise ValueError(f"fusion_norm must be one of {valid_norms}")
+        
         valid_components = ["prime", "quaternion", "kuramoto", "prsc", "smf", "coherence_gate"]
         for comp in self.enabled_components:
             if comp not in valid_components:
@@ -122,6 +128,27 @@ class FusionConfig:
             kuramoto=KuramotoConfig(enabled=False),
             prsc=PRSCConfig(enabled=False),
             smf=SMFConfig(enabled=False),
+            fusion_alpha=0.05,
+            fusion_norm="fusion",
+        )
+
+    @classmethod
+    def enrichment(cls, num_layers: Optional[int] = None) -> 'FusionConfig':
+        """Semantic enrichment configuration with small, controlled deltas."""
+        if num_layers is None:
+            positions = [6]
+        else:
+            mid = max(1, num_layers // 2)
+            positions = [mid]
+        return cls(
+            fusion_positions=positions,
+            enabled_components=["prime", "coherence_gate"],
+            prime=PrimeConfig(num_primes=16, use_quaternion=False),
+            kuramoto=KuramotoConfig(enabled=False),
+            prsc=PRSCConfig(enabled=False),
+            smf=SMFConfig(enabled=False),
+            fusion_alpha=0.05,
+            fusion_norm="fusion",
         )
     
     @classmethod

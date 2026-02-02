@@ -346,6 +346,10 @@ def parse_args():
     parser.add_argument("--use-entanglement", action="store_true", help="Enable Entanglement Network")
     parser.add_argument("--use-stability", action="store_true", help="Enable Stability Monitor")
     parser.add_argument("--use-stochastic-resonance", action="store_true", help="Enable Stochastic Resonance")
+    parser.add_argument("--landscape", type=str, default=None,
+                       help="Path to semantic landscape JSON (enables PRSC)")
+    parser.add_argument("--landscape-min-confidence", type=float, default=None,
+                       help="Minimum confidence required to bind landscape entries")
 
     args = parser.parse_args()
     
@@ -387,6 +391,8 @@ def load_config_file(args):
     args.use_entanglement = config.get('use_entanglement', False)
     args.use_stability = config.get('use_stability', False)
     args.use_stochastic_resonance = config.get('use_stochastic_resonance', False)
+    args.landscape = config.get('landscape_path', args.landscape)
+    args.landscape_min_confidence = config.get('landscape_min_confidence', args.landscape_min_confidence)
 
     # Handle datasets
     datasets = config.get('datasets', [])
@@ -437,7 +443,8 @@ def main():
     # Apply extensions from args (loaded from config file)
     if hasattr(args, 'use_agency') and (
         args.use_agency or args.use_prsc or args.use_temporal_smf or
-        args.use_entanglement or args.use_stability or args.use_stochastic_resonance
+        args.use_entanglement or args.use_stability or args.use_stochastic_resonance or
+        args.landscape
     ):
         print("\nEnabling extended features...")
         config.standard_mode = False
@@ -446,9 +453,14 @@ def main():
             print("  - Agency Layer: Enabled")
             config.agency.enabled = True
             
-        if args.use_prsc:
+        if args.use_prsc or args.landscape:
             print("  - PRSC Semantic Layer: Enabled")
             config.prsc.enabled = True
+            if args.landscape:
+                print(f"    Landscape: {args.landscape}")
+                config.prsc.landscape_path = args.landscape
+            if args.landscape_min_confidence is not None:
+                config.prsc.landscape_min_confidence = args.landscape_min_confidence
             
         if args.use_temporal_smf:
             print("  - Temporal SMF: Enabled")

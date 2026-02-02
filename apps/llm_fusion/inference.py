@@ -30,6 +30,8 @@ class StabilityMetrics:
         entropy: float,
         coherence: float,
         kuramoto_order: float = 0.0,
+        lyapunov_threshold: float = 0.1,
+        coherence_threshold: float = 0.3,
     ):
         """Update metrics with new values."""
         self.entropy_history.append(entropy)
@@ -43,7 +45,7 @@ class StabilityMetrics:
             self.lyapunov_estimate = 0.9 * self.lyapunov_estimate + 0.1 * delta
         
         # Stability based on Lyapunov and coherence
-        self.is_stable = self.lyapunov_estimate < 0.1 and coherence > 0.3
+        self.is_stable = self.lyapunov_estimate < lyapunov_threshold and coherence > coherence_threshold
         
         # Suggest temperature based on stability
         if self.is_stable:
@@ -200,7 +202,13 @@ class ResonanceGenerator:
                     coherence = metrics.get("gate_coherence", metrics.get("prime_coherence", 0.5))
                     order = metrics.get("kuramoto_order", 0.0)
                     
-                    stability.update(entropy, coherence, order)
+                    stability.update(
+                        entropy,
+                        coherence,
+                        order,
+                        lyapunov_threshold=self.stability_config.lyapunov_threshold,
+                        coherence_threshold=self.stability_config.coherence_threshold,
+                    )
                     
                     # Check for divergence
                     if self.config.stop_on_instability:

@@ -21,6 +21,7 @@ import sys
 import os
 import math
 import time
+from collections import Counter
 from typing import List, Optional, Tuple, Dict, Any, Union
 
 # Ensure we can import from parent directories
@@ -367,6 +368,7 @@ class ResoLLMModel(nn.Module):
                 dim=config.dim,
                 prsc=self.prsc
             )
+            self._seed_prsc_from_landscape()
             
         # 3. Temporal SMF (Sedenion Memory Field)
         self.smf = None
@@ -412,6 +414,68 @@ class ResoLLMModel(nn.Module):
                 signal_threshold=config.stochastic_resonance.signal_threshold,
                 optimal_noise_ratio=config.stochastic_resonance.optimal_noise_ratio
             )
+
+    def _seed_prsc_from_landscape(self) -> None:
+        config = self.config
+        if not config.prsc.landscape_path or self.prsc is None:
+            return
+
+        try:
+            from apps.semantic_premodel.io import load_landscape
+            from tinyaleph.hilbert.state import PrimeState
+        except Exception:
+            return
+
+        try:
+            landscape = load_landscape(config.prsc.landscape_path)
+        except Exception:
+            return
+
+        entries = list(landscape.entries.values())
+        if not entries:
+            return
+
+        entries.sort(key=lambda e: (-e.confidence, e.prime))
+        meaning_counts = Counter(entry.meaning for entry in entries)
+        primes = sorted(landscape.entries.keys())
+        mirror_prime = None
+        try:
+            mirror_prime = landscape.metadata.get("mirror", {}).get("prime")
+        except Exception:
+            mirror_prime = None
+
+        max_bindings = config.prsc.max_bindings or len(entries)
+        min_conf = config.prsc.landscape_min_confidence
+        bound = 0
+
+        for entry in entries:
+            if bound >= max_bindings:
+                break
+            if entry.confidence < min_conf:
+                continue
+
+            concept = entry.meaning
+            if meaning_counts.get(entry.meaning, 0) > 1:
+                concept = f"{entry.meaning}#{entry.prime}"
+
+            try:
+                state = PrimeState.basis(entry.prime, primes)
+            except Exception:
+                continue
+
+            metadata = {
+                "prime": entry.prime,
+                "meaning": entry.meaning,
+                "origin": entry.origin,
+                "category": entry.category,
+                "role": entry.role,
+                "adjective": entry.adjective,
+                "mirror": entry.prime == mirror_prime,
+                "source": "semantic_premodel",
+            }
+
+            self.prsc.bind(concept, state, strength=entry.confidence, metadata=metadata)
+            bound += 1
 
     def forward(
         self,
