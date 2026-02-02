@@ -805,7 +805,7 @@ class HuggingFaceDataset(TextDataset):
             
             # Process in chunks to avoid memory issues
             current_chunk = []
-            chunk_size = 1000  # Process 1000 examples at a time
+            chunk_size = 100  # Process 100 examples at a time
             
             for i, item in enumerate(dataset):
                 text_to_add = ""

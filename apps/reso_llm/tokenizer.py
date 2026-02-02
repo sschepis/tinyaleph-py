@@ -43,6 +43,10 @@ class ResoBPETokenizer:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         # GPT-2 has no PAD token, set it to EOS
         self.tokenizer.pad_token = self.tokenizer.eos_token
+        
+        # Suppress token length warnings during dataset processing
+        # We handle sequence length truncation manually in the dataset/model
+        self.tokenizer.model_max_length = 1_000_000_000
 
         self.special_tokens = {
             "<PAD>": self.tokenizer.pad_token_id,
