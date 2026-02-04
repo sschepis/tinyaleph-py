@@ -1,13 +1,16 @@
 {
-  "model_size": "xlarge",
+  "model_size": "tiny",
   "datasets": [
-    "lonestar108/companion"
+    "lonestar108/assistant",
+    "lonestar108/companion",
+    "lonestar108/rawdata",
+    "lonestar108/sexygpt"
   ],
-  "max_tokens_per_dataset": 500000,
+  "max_tokens_per_dataset": 5000000,
   "epochs": 5,
-  "batch_size": 4,
+  "batch_size": 32,
   "seq_len": 256,
-  "learning_rate": 0.0003,
+  "learning_rate": 6e-05,
   "warmup_steps": 100,
   "shuffle_data": true,
   "validate_output": true,
@@ -19,5 +22,10 @@
   "use_stability": true,
   "use_stochastic_resonance": true,
   "config_name": "default",
-  "description": ""
+  "description": "",
+  "vocab_size": 50257,
+  "force_bpe": true,
+  "metadata": {
+    "tokenizer": "gpt2-bpe-50257"
+  }
 }

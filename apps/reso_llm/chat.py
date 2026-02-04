@@ -215,9 +215,14 @@ def load_model_from_checkpoint(checkpoint_path: str, force_standard: bool = Fals
         print(f"  Mode: {'Standard' if config.standard_mode else 'Extended'}")
         
         # Choose tokenizer based on vocab size
+        # IMPORTANT: Models with vocab_size=50257 were trained WITHOUT special chat tokens
+        # We must NOT add chat tokens or the tokenizer vocab will mismatch the model
         if config.vocab_size == 50257:
-            print("  Tokenizer: GPT-2 BPE")
-            tokenizer = create_bpe_tokenizer()
+            print("  Tokenizer: GPT-2 BPE (no chat tokens - base vocab)")
+            tokenizer = create_bpe_tokenizer(add_chat_tokens=False)
+        elif config.vocab_size == 50264:
+            print("  Tokenizer: GPT-2 BPE (with chat tokens)")
+            tokenizer = create_bpe_tokenizer(add_chat_tokens=True)
         else:
             print(f"  Tokenizer: Character-level (vocab={config.vocab_size})")
             tokenizer = create_char_tokenizer(config.vocab_size)

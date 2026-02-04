@@ -114,11 +114,14 @@ class TrainingTemplate:
                 role = msg.get("role", "user").lower()
                 content = msg.get("content", "")
                 
-                if role in ("user", "human"):
+                # Map various role names to user/assistant
+                # User roles: user, human, he, boy
+                # Assistant roles: assistant, bot, gpt, she, girl
+                if role in ("user", "human", "he", "boy"):
                     parts.append(f"{SPECIAL_TOKENS['user_start']}")
                     parts.append(content)
                     parts.append(f"{SPECIAL_TOKENS['user_end']}")
-                elif role in ("assistant", "bot", "gpt"):
+                elif role in ("assistant", "bot", "gpt", "she", "girl"):
                     parts.append(f"{SPECIAL_TOKENS['assistant_start']}")
                     parts.append(content)
                     parts.append(f"{SPECIAL_TOKENS['assistant_end']}")
@@ -129,11 +132,14 @@ class TrainingTemplate:
                 speaker = turn.get("speaker", "").lower()
                 text = turn.get("text", "")
                 
-                if speaker == "human":
+                # Map various speaker names to user/assistant
+                # User speakers: human, he, boy
+                # Assistant speakers: assistant, she, girl
+                if speaker in ("human", "he", "boy"):
                     parts.append(f"{SPECIAL_TOKENS['user_start']}")
                     parts.append(text)
                     parts.append(f"{SPECIAL_TOKENS['user_end']}")
-                elif speaker == "assistant":
+                elif speaker in ("assistant", "she", "girl"):
                     parts.append(f"{SPECIAL_TOKENS['assistant_start']}")
                     parts.append(text)
                     parts.append(f"{SPECIAL_TOKENS['assistant_end']}")
@@ -145,6 +151,24 @@ class TrainingTemplate:
             parts.append(f"{SPECIAL_TOKENS['user_end']}")
             parts.append(f"{SPECIAL_TOKENS['assistant_start']}")
             parts.append(data["assistant"])
+            parts.append(f"{SPECIAL_TOKENS['assistant_end']}")
+        
+        # Support He/She field pairs
+        elif "he" in data and "she" in data:
+            parts.append(f"{SPECIAL_TOKENS['user_start']}")
+            parts.append(data["he"])
+            parts.append(f"{SPECIAL_TOKENS['user_end']}")
+            parts.append(f"{SPECIAL_TOKENS['assistant_start']}")
+            parts.append(data["she"])
+            parts.append(f"{SPECIAL_TOKENS['assistant_end']}")
+        
+        # Support Boy/Girl field pairs
+        elif "boy" in data and "girl" in data:
+            parts.append(f"{SPECIAL_TOKENS['user_start']}")
+            parts.append(data["boy"])
+            parts.append(f"{SPECIAL_TOKENS['user_end']}")
+            parts.append(f"{SPECIAL_TOKENS['assistant_start']}")
+            parts.append(data["girl"])
             parts.append(f"{SPECIAL_TOKENS['assistant_end']}")
         
         parts.append(SPECIAL_TOKENS['eos'])

@@ -48,7 +48,7 @@ except ImportError:
     _ASSISTANT_END = "<|endofassistant|>"
     _EOS = "<|endoftext|>"
 
-# Chat prompt template for proper instruction-following format
+# Chat prompt template for proper instruction-following format (with special tokens)
 CHAT_TEMPLATE = f"""{_SYSTEM_START}
 You are a helpful, harmless, and honest AI assistant.
 {_SYSTEM_END}
@@ -60,59 +60,94 @@ ASSISTANT_TEMPLATE = f"{_ASSISTANT_START}\n{{message}}\n{_ASSISTANT_END}"
 # Stop tokens for chat generation
 CHAT_STOP_TOKENS = [_ASSISTANT_END, _USER_START, _EOS]
 
+# =============================================================================
+# Simple Chat Format (for models without special tokens)
+# =============================================================================
+# This format works with base GPT-2 vocab models that weren't trained on chat templates
+# It uses natural language markers that tokenize as regular text
 
-def format_conversation(messages: List[Dict[str, str]]) -> str:
+SIMPLE_USER_TEMPLATE = "Human: {message}\n"
+SIMPLE_ASSISTANT_TEMPLATE = "Assistant: {message}\n"
+SIMPLE_STOP_TOKENS = ["\nHuman:", "\n\nHuman:", "Human:"]
+
+
+# Role mappings for various dataset formats
+# User roles: user, human, he, boy
+# Assistant roles: assistant, bot, gpt, she, girl
+USER_ROLES = ('user', 'human', 'he', 'boy')
+ASSISTANT_ROLES = ('assistant', 'bot', 'gpt', 'she', 'girl')
+
+
+def format_conversation(messages: List[Dict[str, str]], use_simple_format: bool = False) -> str:
     """
     Format a list of messages into proper chat format.
     
     Args:
         messages: List of dicts with 'role' and 'content' keys
+        use_simple_format: If True, use simple Human:/Assistant: format
     
     Returns:
         Formatted conversation string
+    
+    Supported roles:
+        User: user, human, he, boy
+        Assistant: assistant, bot, gpt, she, girl
     """
     formatted_parts = []
     for msg in messages:
         role = msg.get('role', 'user').lower()
         content = msg.get('content', '')
         
-        if role in ('user', 'human'):
-            formatted_parts.append(USER_TEMPLATE.format(message=content))
-        elif role in ('assistant', 'bot', 'gpt'):
-            formatted_parts.append(ASSISTANT_TEMPLATE.format(message=content))
+        if use_simple_format:
+            if role in USER_ROLES:
+                formatted_parts.append(SIMPLE_USER_TEMPLATE.format(message=content))
+            elif role in ASSISTANT_ROLES:
+                formatted_parts.append(SIMPLE_ASSISTANT_TEMPLATE.format(message=content))
+        else:
+            if role in USER_ROLES:
+                formatted_parts.append(USER_TEMPLATE.format(message=content))
+            elif role in ASSISTANT_ROLES:
+                formatted_parts.append(ASSISTANT_TEMPLATE.format(message=content))
     
     return '\n'.join(formatted_parts)
 
 
-def build_chat_prompt(messages: List[Dict[str, str]], add_assistant_prompt: bool = True) -> str:
+def build_chat_prompt(messages: List[Dict[str, str]], add_assistant_prompt: bool = True, use_simple_format: bool = False) -> str:
     """
     Build a full chat prompt from message history.
     
     Args:
         messages: List of message dicts with 'role' and 'content'
         add_assistant_prompt: Whether to add the assistant prompt prefix
+        use_simple_format: If True, use simple Human:/Assistant: format
         
     Returns:
         Formatted prompt string ready for generation
     """
-    conversation = format_conversation(messages)
-    prompt = CHAT_TEMPLATE.format(conversation=conversation)
+    conversation = format_conversation(messages, use_simple_format=use_simple_format)
     
-    # Remove end token for continuation
-    prompt = prompt.replace('<|endoftext|>', '')
-    
-    if add_assistant_prompt:
-        prompt += "\n<|assistant|>\n"
+    if use_simple_format:
+        # Simple format: just the conversation with Assistant: prompt
+        prompt = conversation
+        if add_assistant_prompt:
+            prompt += "Assistant:"
+    else:
+        prompt = CHAT_TEMPLATE.format(conversation=conversation)
+        # Remove end token for continuation
+        prompt = prompt.replace('<|endoftext|>', '')
+        if add_assistant_prompt:
+            prompt += "\n<|assistant|>\n"
     
     return prompt
 
 
-def extract_assistant_response(text: str) -> str:
+def extract_assistant_response(text: str, use_simple_format: bool = False) -> str:
     """
     Extract the assistant's response from generated text.
     
     Args:
         text: Raw generated text
+        use_simple_format: If True, use simple Human: stop markers
         
     Returns:
         Cleaned response text
@@ -120,7 +155,8 @@ def extract_assistant_response(text: str) -> str:
     response = text
     
     # Stop at end markers
-    for marker in CHAT_STOP_TOKENS:
+    stop_tokens = SIMPLE_STOP_TOKENS if use_simple_format else CHAT_STOP_TOKENS
+    for marker in stop_tokens:
         if marker in response:
             response = response.split(marker)[0]
     
@@ -218,6 +254,10 @@ class ResoLLMInference:
     
     Extended Mode (when model has extensions enabled):
         Full stability monitoring, agency guidance, and multi-agent coordination.
+    
+    Chat Format Modes:
+        - With chat tokens: Uses <|user|>, <|assistant|>, etc. (vocab_size=50264)
+        - Simple format: Uses Human:/Assistant: markers (vocab_size=50257)
     """
     
     def __init__(
@@ -256,6 +296,16 @@ class ResoLLMInference:
         
         if self._extended_mode:
             self._init_extended_tracking()
+        
+        # Chat format mode:
+        # - Models trained on chat templates should use chat format (even without special tokens)
+        # - The chat template tokens like <|user|> are tokenized as multi-token sequences
+        # - This is fine - the model learned the pattern during training
+        # - Only use simple format for models explicitly trained without chat templates
+        #
+        # For now, always use chat format since all our trained models use it
+        # The vocab_size=50257 just means tokens aren't added as special single tokens
+        self._use_simple_format = False  # Use chat template format
     
     def _init_extended_tracking(self):
         """Initialize extended mode tracking components."""
@@ -477,7 +527,8 @@ class ResoLLMInference:
 
                 # Early stop on chat stop markers
                 current_text = self.tokenizer.decode(generated_tokens)
-                for marker in CHAT_STOP_TOKENS:
+                stop_tokens = SIMPLE_STOP_TOKENS if self._use_simple_format else CHAT_STOP_TOKENS
+                for marker in stop_tokens:
                     if marker in current_text:
                         # Trim to before the marker and stop
                         current_text = current_text.split(marker)[0]
@@ -576,10 +627,11 @@ class ResoLLMInference:
         goal: Optional[str] = None,
     ) -> str:
         """
-        Generate a response in a chat context using jupyter2.py format.
+        Generate a response in a chat context.
         
-        Uses proper chat tokens: <|system|>, <|user|>, <|assistant|>, etc.
-        This matches the training format used in jupyter2.py/Colab.
+        Uses the appropriate format based on tokenizer:
+        - With chat tokens: <|system|>, <|user|>, <|assistant|>, etc.
+        - Simple format: Human:/Assistant: markers
         
         Args:
             user_input: The user's message
@@ -596,8 +648,8 @@ class ResoLLMInference:
         messages = list(history)  # Copy to avoid modifying original
         messages.append({'role': 'user', 'content': user_input})
         
-        # Build prompt using jupyter2.py format
-        prompt = build_chat_prompt(messages, add_assistant_prompt=True)
+        # Build prompt using appropriate format
+        prompt = build_chat_prompt(messages, add_assistant_prompt=True, use_simple_format=self._use_simple_format)
         
         # Update memory if available
         if hasattr(self.model, 'update_memory'):
@@ -606,7 +658,7 @@ class ResoLLMInference:
         result = self.generate(prompt, max_length=max_length, goal=goal)
         
         # Extract and clean the response
-        response = extract_assistant_response(result.text)
+        response = extract_assistant_response(result.text, use_simple_format=self._use_simple_format)
         return response
         
     def chat_with_result(
@@ -619,7 +671,7 @@ class ResoLLMInference:
         """
         Generate a chat response with full result data.
         
-        Uses proper chat tokens matching jupyter2.py format.
+        Uses the appropriate format based on tokenizer.
         """
         history = history or []
         
@@ -627,8 +679,8 @@ class ResoLLMInference:
         messages = list(history)
         messages.append({'role': 'user', 'content': user_input})
         
-        # Build prompt using jupyter2.py format
-        prompt = build_chat_prompt(messages, add_assistant_prompt=True)
+        # Build prompt using appropriate format
+        prompt = build_chat_prompt(messages, add_assistant_prompt=True, use_simple_format=self._use_simple_format)
         
         if hasattr(self.model, 'update_memory'):
             self.model.update_memory(user_input, importance=0.9)
@@ -636,20 +688,22 @@ class ResoLLMInference:
         result = self.generate(prompt, max_length=max_length, goal=goal)
         
         # Extract and clean the response
-        response = extract_assistant_response(result.text)
+        response = extract_assistant_response(result.text, use_simple_format=self._use_simple_format)
         return response, result
 
     def interactive_session(self, show_metrics: bool = False):
         """
         Run an interactive CLI session.
         
-        Uses jupyter2.py chat format with proper chat tokens.
+        Uses the appropriate chat format based on tokenizer.
         
         Args:
             show_metrics: Whether to display generation metrics
         """
         mode_str = "Extended" if self._extended_mode else "Standard"
+        format_str = "Simple (Human:/Assistant:)" if self._use_simple_format else "Chat Tokens"
         print(f"Reso-LLM Interactive Session ({mode_str} Mode)")
+        print(f"Chat Format: {format_str}")
         print("Type 'exit' or 'quit' to end session")
         if self._extended_mode:
             print("Commands: 'goal <description>', 'status', 'metrics'")
@@ -701,7 +755,7 @@ class ResoLLMInference:
                 if len(history) > 20:
                     history = history[-20:]
                 
-                print(f"\nAssistant: {response}")
+                print(f"\nA: {response}")
                 
                 if show_metrics_mode:
                     print(f"\n  [Tokens: {result.tokens_generated}, "

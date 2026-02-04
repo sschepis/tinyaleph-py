@@ -70,8 +70,12 @@ from typing import List, Tuple, Generator, Optional, Dict
 # Ensure we can import from parent directories
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from apps.reso_llm.tokenizer import ResoLLMTokenizer
+from apps.reso_llm.tokenizer import ResoLLMTokenizer, ResoBPETokenizer, CHAT_SPECIAL_TOKENS
 from tinyaleph.ml.resoformer import Tensor
+
+# Union type for tokenizer compatibility
+from typing import Union
+TokenizerType = Union[ResoLLMTokenizer, ResoBPETokenizer]
 
 
 @dataclass
@@ -1541,6 +1545,10 @@ class MultiDataset(TextDataset):
         """
         Perform comprehensive validation of the combined dataset.
         
+        Uses tokenizer-based conversation boundary detection to find complete
+        conversations in the token stream, avoiding issues with fragmented
+        special tokens when decoding random positions.
+        
         Args:
             num_samples: Number of samples to display and check
             verbose: Whether to print detailed output
@@ -1552,6 +1560,8 @@ class MultiDataset(TextDataset):
             - combined: Combined dataset validation metrics
             - samples: Sample conversation previews
         """
+        import re
+        
         results = {
             "valid": True,
             "per_dataset": [],
@@ -1587,23 +1597,74 @@ class MultiDataset(TextDataset):
             results["issues"].append("No tokens loaded in combined dataset")
             return results
         
-        # Sample and validate conversations
+        # Sample and validate conversations using tokenizer-based boundary detection
         try:
-            # Decode random sections
-            for i in range(num_samples):
-                start_pos = random.randint(0, max(0, len(self.data) - 2000))
-                sample_tokens = self.data[start_pos:start_pos + 2000]
-                sample_text = self.tokenizer.decode(sample_tokens)
+            # Check if tokenizer has conversation boundary detection
+            has_boundary_detection = (
+                hasattr(self.tokenizer, 'find_conversation_boundaries') and
+                hasattr(self.tokenizer, 'extract_complete_conversations')
+            )
+            
+            if has_boundary_detection:
+                # Use tokenizer's built-in conversation extraction (more reliable)
+                # Sample from different parts of the dataset
+                samples_found = 0
+                attempts = 0
+                max_attempts = num_samples * 3  # Allow some failed attempts
                 
-                # Find a complete conversation
-                # Look for <|user|>...<|endofassistant|> pattern
-                import re
+                while samples_found < num_samples and attempts < max_attempts:
+                    attempts += 1
+                    
+                    # Sample a chunk from a random position
+                    chunk_size = min(5000, len(self.data))
+                    start_pos = random.randint(0, max(0, len(self.data) - chunk_size))
+                    chunk_tokens = self.data[start_pos:start_pos + chunk_size]
+                    
+                    # Find conversation boundaries in this chunk
+                    boundaries = self.tokenizer.find_conversation_boundaries(chunk_tokens)
+                    
+                    for start, end in boundaries:
+                        if samples_found >= num_samples:
+                            break
+                        
+                        # Decode the complete conversation
+                        conv_tokens = chunk_tokens[start:end]
+                        conv_text = self.tokenizer.decode(conv_tokens, skip_special=False)
+                        
+                        # Extract user and assistant content
+                        pattern = r'<\|user\|>\s*(.+?)\s*<\|endofuser\|>\s*<\|assistant\|>\s*(.+?)\s*<\|endofassistant\|>'
+                        match = re.search(pattern, conv_text, re.DOTALL)
+                        
+                        if match:
+                            user_text = match.group(1).strip()[:100]
+                            assistant_text = match.group(2).strip()[:100]
+                            
+                            results["samples"].append({
+                                "user_preview": user_text,
+                                "assistant_preview": assistant_text,
+                                "valid": bool(user_text and assistant_text)
+                            })
+                            
+                            if verbose:
+                                print(f"\n[Sample {samples_found + 1}]")
+                                print(f"  User: {user_text}...")
+                                print(f"  Assistant: {assistant_text}...")
+                            
+                            samples_found += 1
+            else:
+                # Fallback to text-based extraction for legacy tokenizers
+                # Decode a large contiguous chunk and extract complete conversations
+                chunk_size = min(50000, len(self.data))
+                chunk_tokens = self.data[:chunk_size]
+                chunk_text = self.tokenizer.decode(chunk_tokens)
+                
+                # Find all complete conversations in the chunk
                 pattern = r'<\|user\|>\s*(.+?)\s*<\|endofuser\|>\s*<\|assistant\|>\s*(.+?)\s*<\|endofassistant\|>'
-                match = re.search(pattern, sample_text, re.DOTALL)
+                matches = re.findall(pattern, chunk_text, re.DOTALL)
                 
-                if match:
-                    user_text = match.group(1).strip()[:100]
-                    assistant_text = match.group(2).strip()[:100]
+                for i, (user_text, assistant_text) in enumerate(matches[:num_samples]):
+                    user_text = user_text.strip()[:100]
+                    assistant_text = assistant_text.strip()[:100]
                     
                     results["samples"].append({
                         "user_preview": user_text,
@@ -1612,11 +1673,15 @@ class MultiDataset(TextDataset):
                     })
                     
                     if verbose:
-                        print(f"\n[Sample {i+1}]")
+                        print(f"\n[Sample {i + 1}]")
                         print(f"  User: {user_text}...")
                         print(f"  Assistant: {assistant_text}...")
+                        
         except Exception as e:
             results["issues"].append(f"Sample validation error: {e}")
+            import traceback
+            if verbose:
+                traceback.print_exc()
         
         if verbose:
             print(f"\n{'='*60}")
